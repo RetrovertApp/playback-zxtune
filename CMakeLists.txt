@@ -22,7 +22,7 @@ download_library(
 
 set(ZXTUNE_ROOT "${zxtune_SOURCE_DIR}")
 
-find_package(ZLIB REQUIRED)
+add_subdirectory(external/zlib)
 
 # Collect source files following BZRPlayer's pattern
 file(GLOB ZXTUNE_FMT_SOURCES "${ZXTUNE_ROOT}/3rdparty/fmt/src/format.cc")

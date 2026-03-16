@@ -128,7 +128,7 @@
 @@ -57,7 +57,7 @@ namespace Devices::TurboSound
        Chip1.Tick(ticks);
      }
-
+ 
 -    Sound::Sample GetLevels() const
 +    Sound::Sample GetLevels()
      {

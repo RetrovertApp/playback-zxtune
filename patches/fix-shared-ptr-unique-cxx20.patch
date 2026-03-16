@@ -1,7 +1,7 @@
 --- a/src/core/plugins/archives/raw_supp.cpp
 +++ b/src/core/plugins/archives/raw_supp.cpp
 @@ -427,7 +427,7 @@
-
+ 
      void Move(std::size_t step)
      {
 -      if (!Subdata.unique())

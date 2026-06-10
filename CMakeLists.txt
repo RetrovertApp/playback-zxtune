@@ -255,6 +255,19 @@ if(NOT MSVC)
     target_compile_options(zxtune_playback PRIVATE -funsigned-char)
 endif()
 
+# libstdc++ 16 / GCC 16 dropped transitive includes that ZXTune r5100 relied on for
+# the fixed-width int types (e.g. uint16_t in strings/encoding.h). Force-include
+# them so the upstream tree builds on newer standard libraries without another
+# source patch. This target mixes C and C++ sources, so use the C++ header for C++
+# TUs (the <*.h> form trips clang's -Wdeprecated under -Werror) and the C header
+# for the C sources (z80ex, lhasa).
+if(NOT MSVC)
+    target_compile_options(zxtune_playback PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-include cstdint>"
+        "$<$<COMPILE_LANGUAGE:C>:SHELL:-include stdint.h>"
+    )
+endif()
+
 target_link_libraries(zxtune_playback PRIVATE ZLIB::ZLIB)
 
 rv_set_plugin_properties(zxtune_playback)

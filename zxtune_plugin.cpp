@@ -26,6 +26,7 @@
 #include "sound/chunk.h"
 #include "time/duration.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -474,12 +475,66 @@ static void zxtune_static_init(const RVService* service_api) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Per-channel scope visualization using AY/YM chip per-channel levels.
-// Captures 3-channel waveform data from the PSG emulator's internal state.
+// Scope-only visualization: the 3 AY/PSG chip channels. get_structure advertises
+// the caps, get_scope_channels names them, and get_scope_samples returns waveform
+// data captured from the emulator's per-channel state after set_scope_enabled.
 
-static uint32_t zxtune_get_scope_data(void* user_data, int channel, float* buffer, uint32_t num_samples) {
+static bool zxtune_get_structure(void* user_data, RVVizInfo* out) {
     auto* data = static_cast<ZXTuneData*>(user_data);
-    if (data == nullptr || buffer == nullptr) {
+    if (data == nullptr || out == nullptr) {
+        return false;
+    }
+
+    out->caps = RVVizCaps_Scope;
+    out->scroll_mode = RVScrollMode_Synchronized;
+    out->pattern_channel_count = 0;
+    out->scope_channel_count = AYM_SCOPE_NUM_CHANNELS;
+    out->column_count = 0;
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static uint32_t zxtune_get_scope_channels(void* user_data, RVChannelDesc* out, uint32_t cap) {
+    (void)user_data;
+    if (out == nullptr) {
+        return 0;
+    }
+
+    static const char* s_names[] = { "AY A", "AY B", "AY C" };
+    uint32_t count = AYM_SCOPE_NUM_CHANNELS;
+    if (count > cap)
+        count = cap;
+    for (uint32_t i = 0; i < count; i++) {
+        memset(out[i].name, 0, sizeof(out[i].name));
+        snprintf(reinterpret_cast<char*>(out[i].name), sizeof(out[i].name), "%s", s_names[i]);
+        out[i].scope_width = 0;
+    }
+    return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void zxtune_set_scope_enabled(void* user_data, bool on) {
+    auto* data = static_cast<ZXTuneData*>(user_data);
+    if (data == nullptr) {
+        return;
+    }
+
+    if (on) {
+        data->scope_state.Reset();
+        g_aym_scope_state = &data->scope_state;
+    } else if (data->scope_enabled) {
+        g_aym_scope_state = nullptr;
+    }
+    data->scope_enabled = on;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static uint32_t zxtune_get_scope_samples(void* user_data, int32_t channel, float* out, uint32_t cap) {
+    auto* data = static_cast<ZXTuneData*>(user_data);
+    if (data == nullptr || out == nullptr || !data->scope_enabled) {
         return 0;
     }
 
@@ -487,27 +542,7 @@ static uint32_t zxtune_get_scope_data(void* user_data, int channel, float* buffe
         return 0;
     }
 
-    // Auto-enable scope capture on first call
-    if (!data->scope_enabled) {
-        data->scope_state.Reset();
-        g_aym_scope_state = &data->scope_state;
-        data->scope_enabled = true;
-    }
-
-    return aym_scope_get_data(&data->scope_state, channel, buffer, num_samples);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static uint32_t zxtune_get_scope_channel_names(void* user_data, const char** names, uint32_t max_channels) {
-    (void)user_data;
-    static const char* s_names[] = { "AY A", "AY B", "AY C" };
-    uint32_t count = 3;
-    if (count > max_channels)
-        count = max_channels;
-    for (uint32_t i = 0; i < count; i++)
-        names[i] = s_names[i];
-    return count;
+    return aym_scope_get_data(&data->scope_state, channel, out, cap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,12 +564,19 @@ static RVPlaybackPlugin g_zxtune_plugin = {
     zxtune_metadata,
     zxtune_static_init,
     nullptr, // settings_updated
-    nullptr, // get_tracker_info (not implemented yet)
-    nullptr, // get_pattern_cell
-    nullptr, // get_pattern_num_rows
-    zxtune_get_scope_data,
     nullptr, // static_destroy
-    zxtune_get_scope_channel_names,
+
+    // Visualization: scope-only (3 AY chip channels: A, B, C).
+    zxtune_get_structure,
+    nullptr, // get_columns
+    nullptr, // get_pattern_channels
+    zxtune_get_scope_channels,
+    nullptr, // get_position
+    nullptr, // get_channel_rows
+    nullptr, // get_cells
+    zxtune_set_scope_enabled,
+    zxtune_get_scope_samples,
+    nullptr, // get_vu
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

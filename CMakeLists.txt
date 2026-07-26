@@ -250,20 +250,24 @@ target_compile_definitions(zxtune_playback PRIVATE
     Z80EX_RELEASE_TYPE="pre1"
 )
 
+# Recent MSVC runtimes no longer provide stdext::checked_array_iterator, but the
+# bundled fmt version still selects it when secure iterators are enabled.
+if(WIN32)
+    target_compile_definitions(zxtune_playback PRIVATE _SECURE_SCL=0)
+endif()
+
 # ZXTune requires unsigned char for correct byte handling
 if(NOT MSVC)
     target_compile_options(zxtune_playback PRIVATE -funsigned-char)
 endif()
 
-# libstdc++ 16 / GCC 16 dropped transitive includes that ZXTune r5100 relied on for
-# the fixed-width int types (e.g. uint16_t in strings/encoding.h). Force-include
-# them so the upstream tree builds on newer standard libraries without another
-# source patch. This target mixes C and C++ sources, so use the C++ header for C++
-# TUs (the <*.h> form trips clang's -Wdeprecated under -Werror) and the C header
-# for the C sources (z80ex, lhasa).
+# Newer standard libraries dropped transitive includes that ZXTune r5100 relied
+# on for fixed-width integer types and std::mutex. Force-include the missing
+# standard headers without another source patch. This target mixes C and C++
+# sources, so use C++ headers for C++ TUs and the C header for C sources.
 if(NOT MSVC)
     target_compile_options(zxtune_playback PRIVATE
-        "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-include cstdint>"
+        "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-include cstdint -include mutex>"
         "$<$<COMPILE_LANGUAGE:C>:SHELL:-include stdint.h>"
     )
 endif()

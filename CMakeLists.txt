@@ -17,7 +17,14 @@ download_library(
     FILENAME "zxtune-r5100.tar.gz"
     HASH "2123cc21bc422eaec3ae358246ebe518bc7b9066d6f0726d2eb7a264ff9359fb"
     EXTRACT_DIR "zxtune-r5100"
-    PATCHES patches/fix-shared-ptr-unique-cxx20.patch patches/fix-string-view-iterator.patch patches/fix-lexic-analysis-iterator.patch patches/fix-msvc-iterator-types.patch patches/fix-parameters-types-self-include.patch patches/scope-capture.patch
+    PATCHES
+        patches/fix-shared-ptr-unique-cxx20.patch
+        patches/fix-string-view-iterator.patch
+        patches/fix-lexic-analysis-iterator.patch
+        patches/fix-msvc-iterator-types.patch
+        patches/fix-parameters-types-self-include.patch
+        patches/scope-capture.patch
+        patches/lhasa-no-stdio.patch
 )
 
 set(ZXTUNE_ROOT "${zxtune_SOURCE_DIR}")
@@ -34,8 +41,6 @@ file(GLOB ZXTUNE_LHASA_SOURCES
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lh5_decoder.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lh6_decoder.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lh7_decoder.c"
-    "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lha_arch_unix.c"
-    "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lha_arch_win32.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lha_basic_reader.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lha_decoder.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/lha_endian.c"
@@ -48,6 +53,9 @@ file(GLOB ZXTUNE_LHASA_SOURCES
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/null_decoder.c"
     "${ZXTUNE_ROOT}/3rdparty/lhasa/lib/pm2_decoder.c"
 )
+# Keep lhasa's in-memory decoder and reader, but omit its platform adapters;
+# the accompanying patch compiles out the filename and extraction APIs that
+# would otherwise reference them.
 
 file(GLOB ZXTUNE_ANALYSIS_SOURCES "${ZXTUNE_ROOT}/src/analysis/src/*.cpp")
 file(GLOB ZXTUNE_BINARY_COMPRESSION_SOURCES "${ZXTUNE_ROOT}/src/binary/compression/src/*.cpp")
@@ -239,6 +247,7 @@ target_include_directories(zxtune_playback PRIVATE
 target_compile_definitions(zxtune_playback PRIVATE
     NO_L10N
     NO_DEBUG_LOGS
+    LHASA_NO_STDIO
     SOURCES_ROOT="${ZXTUNE_ROOT}"
     FMT_CONSTEVAL=  # Disable fmt consteval for Clang compatibility
     # z80ex library definitions

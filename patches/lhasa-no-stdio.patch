@@ -1,0 +1,38 @@
+diff --git a/3rdparty/lhasa/lib/lha_input_stream.c b/3rdparty/lhasa/lib/lha_input_stream.c
+index 56997ad..db485e5 100644
+--- a/3rdparty/lhasa/lib/lha_input_stream.c
++++ b/3rdparty/lhasa/lib/lha_input_stream.c
+@@ -303,6 +303,8 @@ int lha_input_stream_skip(LHAInputStream *stream, size_t bytes)
+ 	}
+ }
+ 
++#ifndef LHASA_NO_STDIO
++
+ // Read data from a FILE * source.
+ 
+ static int file_source_read(void *handle, void *buf, size_t buf_len)
+@@ -375,3 +377,5 @@ LHAInputStream *lha_input_stream_from_FILE(FILE *stream)
+ 	return lha_input_stream_new(&file_source_unowned, stream);
+ }
+ 
++#endif /* LHASA_NO_STDIO */
++
+diff --git a/3rdparty/lhasa/lib/lha_reader.c b/3rdparty/lhasa/lib/lha_reader.c
+index 64202cf..b5f6395 100644
+--- a/3rdparty/lhasa/lib/lha_reader.c
++++ b/3rdparty/lhasa/lib/lha_reader.c
+@@ -358,6 +358,8 @@ int lha_reader_check(LHAReader *reader,
+ 	    && do_decode(reader, NULL);
+ }
+ 
++#ifndef LHASA_NO_STDIO
++
+ // Open an output stream into which to decompress the current file.
+ // The filename is constructed from the file header of the current file,
+ // or 'filename' is used if it is not NULL.
+@@ -621,3 +623,5 @@ int lha_reader_extract(LHAReader *reader,
+ 	return 0;
+ }
+ 
++
++#endif /* LHASA_NO_STDIO */

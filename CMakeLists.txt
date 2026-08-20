@@ -29,6 +29,13 @@ download_library(
 
 set(ZXTUNE_ROOT "${zxtune_SOURCE_DIR}")
 
+set(ZXTUNE_SOURCES_ROOT "${ZXTUNE_ROOT}")
+if(DEFINED HARNESS_CMAKE_DIR AND NOT WIN32)
+    # Must mirror harness.cmake's -ffile-prefix-map=${CMAKE_BINARY_DIR}=/rvbuild,
+    # or zxtune's __FILE__-vs-SOURCES_ROOT static_assert fails under the harness.
+    string(REPLACE "${CMAKE_BINARY_DIR}" "/rvbuild" ZXTUNE_SOURCES_ROOT "${ZXTUNE_ROOT}")
+endif()
+
 add_subdirectory(external/zlib)
 
 # Collect source files following BZRPlayer's pattern
@@ -248,7 +255,7 @@ target_compile_definitions(zxtune_playback PRIVATE
     NO_L10N
     NO_DEBUG_LOGS
     LHASA_NO_STDIO
-    SOURCES_ROOT="${ZXTUNE_ROOT}"
+    SOURCES_ROOT="${ZXTUNE_SOURCES_ROOT}"
     FMT_CONSTEVAL=  # Disable fmt consteval for Clang compatibility
     # z80ex library definitions
     WORDS_LITTLE_ENDIAN

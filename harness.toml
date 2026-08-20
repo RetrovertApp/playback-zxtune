@@ -1,0 +1,9 @@
+[plugin]
+name = "zxtune"
+
+[data]
+entries = []
+
+[[fixtures]]
+file = "fixtures/Speccy2.pt3"
+sha256 = "e770735d746750702dd6ed7e630fe8fdcfdfa8cf7f6b238d7911ed526b791f07"
